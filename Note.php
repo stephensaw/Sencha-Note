@@ -2,12 +2,13 @@
 $current_page = 1;
 $offset_page = 0;
 $limit_per_page = 25;
+$fp = fopen('NoteLog.txt', 'a+');
+$link = mysqli_connect("localhost","root","fo8xj8qv");
 
-$link = mysql_connect("localhost","root","root");
-
-mysql_select_db("senchanote",$link);
+mysqli_select_db($link, "senchanote");
 
 if (!isset($_REQUEST["action"])) {
+    fwrite($fp, "No action defined\n");
 	$result = array("notes"=>array(),"total"=>0);
 
 	$current_page = $_REQUEST["page"];
@@ -18,57 +19,67 @@ if (!isset($_REQUEST["action"])) {
 
 	if (isset($_REQUEST["keyword"]))
 		$keyword = $_REQUEST["keyword"];
+    fwrite($fp, 'Keyword: '.$keyword."\n");
 
 	$query = "select n.id,content,categoryid,name from notes n left join categories c on n.categoryid = c.id where content like concat('%','" .$keyword. "','%') limit " .$limit_per_page. " offset " .$offset_page;
-	$dbresult = mysql_query($query);
+    fwrite($fp, 'Query: '.$query."\n");
 
-	if (mysql_affected_rows() > 0) {
-		while($row = mysql_fetch_array($dbresult))
+	$dbresult = mysqli_query($link,$query);
+
+	if (mysqli_affected_rows($link) > 0) {
+		while($row = mysqli_fetch_array($dbresult))
 		{
 			array_push($result["notes"],array("id"=>$row["id"],
 				"content"=>addslashes((string)$row["content"]),
 				"categoryid"=>$row["categoryid"],
 				"category"=>(string)$row["name"]));
+                fwrite($fp, 'Result (limited & offset): '.$row["id"].";".$row["content"].";".$row["categoryid"].";".$row["name"]."\n");
 		}
 	}
 
 	$query = "select * from notes where content like concat('%','" .$keyword. "','%')";
-	$dbresult = mysql_query($query);
-	$result["total"] = mysql_affected_rows();
-
-	mysql_close();
-}
-else if ($_REQUEST["action"] == "create") {
+	$dbresult = mysqli_query($link,$query);
+	$result["total"] = mysqli_affected_rows($link);
+    fwrite($fp, 'Results total: '.$result["total"]."\n");
+	mysqli_close($link);
+} else if ($_REQUEST["action"] == "create") {
 	$inputPayload = file_get_contents("php://input");
-	$inputPayload = json_decode($inputPayload);
+    fwrite($fp, 'Payload: '.$inputPayload."\n");
+    $inputPayload = json_decode($inputPayload);
+
+    fwrite($fp, 'Create payload content: '.htmlspecialchars($inputPayload->content)."\n");
 
 	$query = "insert into notes values(NULL,'" .htmlspecialchars($inputPayload->content). "',".
 		$inputPayload->categoryid. ")";
+    fwrite($fp, "Add query: $query\n");
+	$dbresult = mysqli_query($link,$query);
 
-	$dbresult = mysql_query($query);
-
-	if(mysql_affected_rows()>0)
+	if(mysqli_affected_rows($link)>0) {
+        fwrite($fp, "Note added\n");
 		$result = array("success"=>true,"message"=>"Note added");
-	else
-		$result = array("success"=>false,"message"=>mysql_error());
+    }else {
+        fwrite($fp, 'Error :'.mysqli_error($link)."\n");
+        $result = array("success"=>false,"message"=>mysqli_error($link));
+    }
 
-	mysql_close();
-}
-else if ($_REQUEST["action"] == "update") {
+	mysqli_close($link);
+} else if ($_REQUEST["action"] == "update") {
 	$inputPayload = file_get_contents("php://input");
-	$inputPayload = json_decode($inputPayload);
+    fwrite($fp, 'Payload: '.$inputPayload."\n");
+    $inputPayload = json_decode($inputPayload);
 
 	$query = "update notes set content='" .htmlspecialchars($inputPayload->content). "', ".
 		"categoryid=" .$inputPayload->categoryid. " where id=" .$inputPayload->id;
+    fwrite($fp, "Update query: $query\n");
 
-	$dbresult = mysql_query($query);
+	$dbresult = mysqli_query($link,$query);
 
-	if(mysql_affected_rows()>0)
+	if(mysqli_affected_rows($link)>0)
 		$result = array("success"=>true,"message"=>"Updated");
 	else
-		$result = array("success"=>false,"message"=>mysql_error());
+		$result = array("success"=>false,"message"=>mysqli_error($link));
 
-	mysql_close();
+	mysqli_close($link);
 }
 
 if (isset($_REQUEST["callback"])) {
@@ -79,4 +90,6 @@ else {
 	header("Content-Type: application/x-json");
 	echo json_encode($result);
 }
+fclose($fp);
+
 ?>
