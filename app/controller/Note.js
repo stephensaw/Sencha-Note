@@ -19,6 +19,7 @@ Ext.define("SenchaNote.controller.Note",{
 			},
 			noteEditor: {
 				backCommand: "onBackButton",
+                destroyCommand: "onDestroyButton",
 				saveCommand: "onSaveButton"
 			},
 			searchBar: {
@@ -50,29 +51,38 @@ Ext.define("SenchaNote.controller.Note",{
 		Ext.Viewport.animateActiveItem(this.getMainPanel(), { type: "slide", direction: "right" });
 	},
 
-	onSaveButton: function() {
-		var currentNote = this.getNoteEditor().getRecord();
-		var newValue = this.getNoteEditor().getValues();
-		
-		currentNote.set("content", newValue.content);
-		currentNote.set("categoryid", newValue.categoryid);
-		currentNote.set("category", Ext.getStore("Category").findRecord("id", newValue.categoryid).get("name"));
+    onSaveButton: function() {
+        var currentNote = this.getNoteEditor().getRecord();
+        var newValue = this.getNoteEditor().getValues();
 
-		var errors = currentNote.validate();
+        currentNote.set("content", newValue.content);
+        currentNote.set("categoryid", newValue.categoryid);
+        currentNote.set("category", Ext.getStore("Category").findRecord("id", newValue.categoryid).get("name"));
 
-		if (!errors.isValid()) {
-			currentNote.reject();
-			//Ext.Msg.alert("Invalid", errors.getByField("content")[0].getMessage(), Ext.emptyFn);
-			alert(errors.getByField("content")[0].getMessage());
-			return;
-		}
+        var errors = currentNote.validate();
 
-		var noteStore = Ext.getStore("Note");
-		
-		if (null == noteStore.findRecord("id", currentNote.data.id)) {
-			noteStore.add(currentNote);
-		}
+        if (!errors.isValid()) {
+            currentNote.reject();
+            //Ext.Msg.alert("Invalid", errors.getByField("content")[0].getMessage(), Ext.emptyFn);
+            alert(errors.getByField("content")[0].getMessage());
+            return;
+        }
 
-		noteStore.sync();
-	}
+        var noteStore = Ext.getStore("Note");
+
+        if (null == noteStore.findRecord("id", currentNote.data.id)) {
+            noteStore.add(currentNote);
+        }
+
+        noteStore.sync();
+    },
+    onDestroyButton: function() {
+        console.log("onDestroyButton");
+        var currentNote = this.getNoteEditor().getRecord();
+        var noteStore = Ext.getStore("Note");
+
+        Ext.Viewport.animateActiveItem(this.getMainPanel(), { type: "slide", direction: "right" });
+        noteStore.remove(currentNote);
+        noteStore.sync();
+    }
 });
