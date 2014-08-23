@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ERROR);
+
 $current_page = 1;
 $offset_page = 0;
 $limit_per_page = 25;
@@ -42,44 +44,68 @@ if (!isset($_REQUEST["action"])) {
 	$result["total"] = mysqli_affected_rows($link);
     fwrite($fp, 'Results total: '.$result["total"]."\n");
 	mysqli_close($link);
-} else if ($_REQUEST["action"] == "create") {
-	$inputPayload = file_get_contents("php://input");
-    fwrite($fp, 'Payload: '.$inputPayload."\n");
-    $inputPayload = json_decode($inputPayload);
+} else {
+    // Action is defined
+    fwrite($fp, "Action: ".$_REQUEST["action"]."\n");
+    if ($_REQUEST["action"] == "create") {
+        fwrite($fp, "CREATE\n");
+        $inputPayload = file_get_contents("php://input");
+        fwrite($fp, 'Payload: '.$inputPayload."\n");
+        $inputPayload = json_decode($inputPayload);
 
-    fwrite($fp, 'Create payload content: '.htmlspecialchars($inputPayload->content)."\n");
+        fwrite($fp, 'Create payload content: '.htmlspecialchars($inputPayload->content)."\n");
 
-	$query = "insert into notes values(NULL,'" .htmlspecialchars($inputPayload->content). "',".
-		$inputPayload->categoryid. ")";
-    fwrite($fp, "Add query: $query\n");
-	$dbresult = mysqli_query($link,$query);
+        $query = "insert into notes values(NULL,'" .htmlspecialchars($inputPayload->content). "',".
+            $inputPayload->categoryid. ")";
+        fwrite($fp, "Add query: $query\n");
+        $dbresult = mysqli_query($link,$query);
 
-	if(mysqli_affected_rows($link)>0) {
-        fwrite($fp, "Note added\n");
-		$result = array("success"=>true,"message"=>"Note added");
-    }else {
-        fwrite($fp, 'Error :'.mysqli_error($link)."\n");
-        $result = array("success"=>false,"message"=>mysqli_error($link));
+        if(mysqli_affected_rows($link)>0) {
+            fwrite($fp, "Note added\n");
+            $result = array("success"=>true,"message"=>"Note added");
+        }else {
+            fwrite($fp, 'Error :'.mysqli_error($link)."\n");
+            $result = array("success"=>false,"message"=>mysqli_error($link));
+        }
+
+        mysqli_close($link);
+    } else if ($_REQUEST["action"] == "update") {
+        $inputPayload = file_get_contents("php://input");
+        fwrite($fp, "UPDATE\n");
+        fwrite($fp, 'Payload: '.$inputPayload."\n");
+        $inputPayload = json_decode($inputPayload);
+
+        $query = "update notes set content='" .htmlspecialchars($inputPayload->content). "', ".
+            "categoryid=" .$inputPayload->categoryid. " where id=" .$inputPayload->id;
+        fwrite($fp, "Update query: $query\n");
+
+        $dbresult = mysqli_query($link,$query);
+
+        if(mysqli_affected_rows($link)>0)
+            $result = array("success"=>true,"message"=>"Updated");
+        else
+            $result = array("success"=>false,"message"=>mysqli_error($link));
+
+        mysqli_close($link);
+    } else if ($_REQUEST["action"] == "destroy") {
+        fwrite($fp, "DESTROY\n");
+        $inputPayload = file_get_contents("php://input");
+        fwrite($fp, 'Payload: '.$inputPayload."\n");
+        $inputPayload = json_decode($inputPayload);
+
+        $query = "delete from notes where id=" .$inputPayload->id;
+        fwrite($fp, "Delete query: $query\n");
+
+        $dbresult = mysqli_query($link,$query);
+
+        if(mysqli_affected_rows($link)>0)
+            $result = array("success"=>true,"message"=>"Deleted");
+        else
+            $result = array("success"=>false,"message"=>mysqli_error($link));
+
+        mysqli_close($link);
+
     }
-
-	mysqli_close($link);
-} else if ($_REQUEST["action"] == "update") {
-	$inputPayload = file_get_contents("php://input");
-    fwrite($fp, 'Payload: '.$inputPayload."\n");
-    $inputPayload = json_decode($inputPayload);
-
-	$query = "update notes set content='" .htmlspecialchars($inputPayload->content). "', ".
-		"categoryid=" .$inputPayload->categoryid. " where id=" .$inputPayload->id;
-    fwrite($fp, "Update query: $query\n");
-
-	$dbresult = mysqli_query($link,$query);
-
-	if(mysqli_affected_rows($link)>0)
-		$result = array("success"=>true,"message"=>"Updated");
-	else
-		$result = array("success"=>false,"message"=>mysqli_error($link));
-
-	mysqli_close($link);
 }
 
 if (isset($_REQUEST["callback"])) {
@@ -92,4 +118,12 @@ else {
 }
 fclose($fp);
 
+/*
+ * Testing this webservice with CURL :
+ *
+ * Get notes from DB : curl -XGET 'http://192.168.168.10:8888/SenchaNote/Note.php?page=1&limit=10&start=1'
+ * Add a note in the DB : curl -XGET --data '{"content":"content","categoryid":"1","id":"1"}' 'http://192.168.168.10:8888/SenchaNote/Note.php?action=create'
+ * Update a note in the DB : curl -XGET --data '{"content":"modified content","categoryid":"1","id":"1"}' 'http://192.168.168.10:8888/SenchaNote/Note.php?action=update'
+ * Delete a note from the DB : curl -XGET --data '{"content":"modified content","categoryid":"1","id":"1"}' 'http://192.168.168.10:8888/SenchaNote/Note.php?action=destroy'
+ */
 ?>
