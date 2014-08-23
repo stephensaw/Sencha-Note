@@ -9,7 +9,7 @@ Ext.define("SenchaNote.store.Note", {
 				create: "http://192.168.168.10:8888/SenchaNote/Note.php?action=create",
 				read: "http://192.168.168.10:8888/SenchaNote/Note.php",
 				update: "http://192.168.168.10:8888/SenchaNote/Note.php?action=update",
-				destroy: "http://192.168.168.10:8888/SenchaNote/Note.php?action=delete"
+				destroy: "http://192.168.168.10:8888/SenchaNote/Note.php?action=destroy"
 			},
 			extraParams: {
 				keyword: ""

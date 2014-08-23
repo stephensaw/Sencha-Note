@@ -16,13 +16,20 @@ Ext.define("SenchaNote.view.NoteEditor",{
 					scope: this
 				},
 				{ xtype: "spacer" },
-				{
-					xtype: "button",
-					ui: "confirm",
-					text: "Save",
-					handler: this.onSaveTap,
-					scope: this
-				}
+                {
+                    xtype: "button",
+                    ui: "decline",
+                    text: "Destroy",
+                    handler: this.onDestroyTap,
+                    scope: this
+                },
+                {
+                    xtype: "button",
+                    ui: "confirm",
+                    text: "Save",
+                    handler: this.onSaveTap,
+                    scope: this
+                }
 			]
 		};
 		this.add([
@@ -55,5 +62,9 @@ Ext.define("SenchaNote.view.NoteEditor",{
 	},
 	onBackTap: function() {
 		this.fireEvent("backCommand",this);
-	}
+	},
+    onDestroyTap: function() {
+        console.log("onDestroyTap");
+        this.fireEvent("destroyCommand",this);
+    }
 });
