@@ -1,22 +1,22 @@
 <?php
-$link = mysql_connect("localhost","root","root");
+$link = mysqli_connect("localhost","root","fo8xj8qv");
 
-mysql_select_db("senchanote",$link);
+mysqli_select_db($link,"senchanote");
 
 $result = array("categories"=>array());
 
 $query = "select * from categories";
-$dbresult = mysql_query($query);
+$dbresult = mysqli_query($link, $query);
 
-if (mysql_affected_rows() > 0) {
-	while($row = mysql_fetch_array($dbresult))
+if (mysqli_affected_rows($link) > 0) {
+	while($row = mysqli_fetch_array($dbresult))
 	{
 		array_push($result["categories"],array("id"=>$row["id"],
 			"name"=>addslashes((string)$row["name"])));
 	}
 }
 
-mysql_close();
+mysqli_close($link);
 
 if (isset($_REQUEST["callback"])) {
 	header("Content-Type: text/javascript");
